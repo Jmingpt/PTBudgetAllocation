@@ -31,17 +31,25 @@ def dfmapping(df_ga, df_fb):
     mmm = pd.merge(pivot_df, revenue_df, on='YearWeek', how='left')
     mmm_df = mmm.groupby(['YearWeek']).agg(np.sum)
 
-    total_rows = mmm_df.shape[0]
-    dropped_cols = []
-    for col in mmm_df.columns:
-        na_rows = mmm_df[mmm_df[col] == 0].shape[0]
-        missing_rate = na_rows/total_rows
-        missing_criteria = 0.45
-        if missing_rate > missing_criteria:
-            dropped_cols.append(col)
-            mmm_df.drop(col, axis=1, inplace=True)
+    checkbox_cols = st.columns((0.5, 1.5, 4))
+    with checkbox_cols[0]:
+        st.write('**Attention:**')
+    with checkbox_cols[1]:
+        drop_yes_no = st.checkbox(
+            label='Apply Channel Drop?'
+        )
+    if drop_yes_no:
+        total_rows = mmm_df.shape[0]
+        dropped_cols = []
+        for col in mmm_df.columns:
+            na_rows = mmm_df[mmm_df[col] == 0].shape[0]
+            missing_rate = na_rows/total_rows
+            missing_criteria = 0.45
+            if missing_rate > missing_criteria:
+                dropped_cols.append(col)
+                mmm_df.drop(col, axis=1, inplace=True)
 
-    st.info(f'**Dropped columns**: {dropped_cols}. **Reason**: More than {missing_criteria * 100}% missing value.')
+        st.info(f'**Dropped columns**: {dropped_cols}. **Reason**: More than {missing_criteria * 100}% missing value.')
     return df, mmm_df, date_range
 
 
@@ -82,11 +90,15 @@ def upload_files(uploaded_files):
 
             return df, mmm_df, date_range
 
-    elif len(uploaded_files) < 2 or len(uploaded_files) > 2:
+    elif len(uploaded_files) < 2:
         for f in uploaded_files:
             if 'ga' in str(f.name).lower() or 'google' in str(f.name).lower():
                 st.warning('Missing **Facebook** Ads file. Please upload the remaining file.', icon='⚠️')
             elif 'fb' in str(f.name).lower() or 'facebook' in str(f.name).lower():
                 st.warning('Missing **Google Ads** file. Please upload the remaining file.', icon='⚠️')
 
+        return None, None, None
+
+    elif len(uploaded_files) > 2:
+        st.info('Multiple files from different platforms feature is **Under Developing**')
         return None, None, None
